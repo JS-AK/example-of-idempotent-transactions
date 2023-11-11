@@ -7,7 +7,7 @@ import test from "node:test";
 import * as DbManager from "@js-ak/db-manager";
 
 import * as Types from "../../server/types/index.js";
-import { init, shutdown } from "../../server/app.js";
+import { init } from "../../server/app.js";
 
 const config: Types.Config.ConfigOptions = {
 	DB_POSTGRE_DATABASE: "postgres",
