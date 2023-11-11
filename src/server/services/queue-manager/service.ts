@@ -126,7 +126,7 @@ export default class Service extends BaseService {
 			) => {
 				const jobName = this.queues
 					.userBalanceMovingTransactionReduce
-					.getJobName(data.userId);
+					.getJobName();
 				const job = await this.#queues["user-balance-moving-transaction-reduce"][0].add(
 					jobName,
 					data,
@@ -135,7 +135,7 @@ export default class Service extends BaseService {
 
 				return job.waitUntilFinished(this.#queues["user-balance-moving-transaction-reduce"][1]);
 			},
-			getJobName: (userId: string) => "user-balance-moving-transaction-reduce-user-id-" + userId,
+			getJobName: () => "user-balance-moving-transaction-reduce",
 		},
 	};
 
