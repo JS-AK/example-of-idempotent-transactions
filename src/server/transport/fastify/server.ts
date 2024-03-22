@@ -6,6 +6,7 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import * as Plugins from "./plugins/index.js";
 import { BaseTransport } from "../base-transport.js";
 import { Types } from "./index.js";
+import { collectMethods } from "../../api/lib/helpers.js";
 
 export class Server extends BaseTransport {
 	#host;
@@ -45,7 +46,9 @@ export class Server extends BaseTransport {
 			});
 		},
 		routes: async () => {
-			await this.#server.register(Plugins.Routes.default, this.#sl);
+			const methods = await collectMethods("../json-rpc-v2");
+
+			await this.#server.register(Plugins.Routes.exec, { methods, sl: this.#sl });
 		},
 		swagger: async () => {
 			await this.#server.register(fastifySwagger, {

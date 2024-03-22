@@ -10,4 +10,4 @@ SELECT
   'increase',
   gen_random_uuid()
 FROM users
-WHERE email = 'admin@example.com'
+WHERE email IN ('admin-1@example.com','admin-2@example.com');

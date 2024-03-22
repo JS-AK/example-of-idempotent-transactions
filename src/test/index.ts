@@ -1,4 +1,3 @@
-/* eslint-disable new-cap */
-import CheckLowBalance from "./check-low-balance/index.js";
+import checkLowBalance from "./check-low-balance/index.js";
 
-await CheckLowBalance();
+await checkLowBalance();

@@ -23,6 +23,7 @@ if (!dataConfig) {
 		.MigrationSystem
 		.Down
 		.start(pool, {
+			migrationsTableName: "migration_control",
 			pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
 		});
 

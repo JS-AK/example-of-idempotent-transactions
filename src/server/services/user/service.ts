@@ -41,4 +41,15 @@ export default class Service extends BaseService {
 		getEntityForCheck:
 			async (data: { id?: string; }) => this.#getEntityForCheck(data),
 	};
+
+	outerSpace = {
+		getBalance: async (payload: { id: string; }): Promise<Types.Common.TDataError<number>> => {
+			const balance = await this.#dal
+				.repository
+				.user
+				.getBalance(payload);
+
+			return { data: balance };
+		},
+	};
 }

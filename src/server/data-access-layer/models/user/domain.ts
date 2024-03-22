@@ -20,6 +20,15 @@ export default class Domain extends DbManager.PG.BaseDomain<{
 			selected: ["id"],
 		});
 
-		return one as Types.EntityForCheck | undefined;
+		return one;
+	}
+
+	async getBalance(data: { id: string; }) {
+		const { one } = await super.getOneByParams({
+			params: { id: data.id },
+			selected: ["balance"],
+		});
+
+		return Number(one?.balance) || 0;
 	}
 }

@@ -2,14 +2,16 @@ import fastify from "fastify";
 
 import * as Protocols from "../../../protocols/index.js";
 import { Types } from "../index.js";
-import { collectMethods } from "../../../api/lib/helpers.js";
 
-export default async function exec(
+import * as Api from "../../../api/lib/json-rpc-v2.js";
+
+export const exec = (
 	fastify: fastify.FastifyInstance,
-	sl: Types.ServiceLocator.default,
+	data: { methods: Map<string, typeof Api.JsonRpcV2>; sl: Types.ServiceLocator.default; },
 	next: () => void,
-) {
-	const methods = await collectMethods("../json-rpc-v2");
+) => {
+	const { methods, sl } = data;
+
 	const protocol = new Protocols.JsonRpcV2.Protocol({ methods, sl });
 
 	fastify.after(() => {
@@ -48,7 +50,7 @@ export default async function exec(
 							type: "object",
 						},
 					},
-					tags: [method.split("/")[0]],
+					tags: [method.split("/")[0] || ""],
 				},
 				serializerCompiler: () => (data) => JSON.stringify(data), // DISABLE default fastify serialization
 				url: `/api/${method}`,
@@ -82,4 +84,4 @@ export default async function exec(
 	});
 
 	next();
-}
+};

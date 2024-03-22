@@ -28,9 +28,15 @@ export const init = (options: {
 	} as const;
 
 	const transactions = {
-		"user-balance-transaction-create":
+		"user-balance-transaction-create-1":
 			(data: InnerTransactions.Types.UserBalanceTransactionCreate) =>
-				InnerTransactions.Actions.UserBalanceMovingTransactionCreate.default(
+				InnerTransactions.Actions.UserBalanceMovingTransactionCreate1.default(
+					transactionData,
+					data,
+				),
+		"user-balance-transaction-create-2":
+			(data: InnerTransactions.Types.UserBalanceTransactionCreate) =>
+				InnerTransactions.Actions.UserBalanceMovingTransactionCreate2.default(
 					transactionData,
 					data,
 				),

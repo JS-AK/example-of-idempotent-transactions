@@ -23,7 +23,7 @@ export default class ServiceLocator {
 			bullmq: systemLogger.child({ pSource: "BULLMQ", pThread: this.getThread() }),
 			common: systemLogger.child({ pSource: "COMMON", pThread: this.getThread() }),
 			pg: systemLogger.child({ pSource: "PG", pThread: this.getThread() }),
-			["user-service"]: systemLogger.child({ pSource: "USER-SERVICE", pThread: this.getThread() }),
+			service: systemLogger.child({ pSource: "SERVICE", pThread: this.getThread() }),
 		};
 
 		this.dal = Dal.init({
@@ -60,13 +60,12 @@ export default class ServiceLocator {
 				businessError: this.system.businessError,
 				crypto: this.system.crypto,
 				dal: this.dal,
-				logger: this.loggers["user-service"],
+				logger: this.loggers.service,
 			}),
 			userBalanceMovingTransaction: new Services.UserBalanceMovingTransaction.Service.default({
 				businessError: this.system.businessError,
-				crypto: this.system.crypto,
 				dal: this.dal,
-				logger: this.loggers["user-service"],
+				logger: this.loggers.service,
 			}),
 		};
 

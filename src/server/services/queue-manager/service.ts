@@ -94,12 +94,7 @@ export default class Service extends BaseService {
 			queueName,
 			async (job) => {
 				try {
-					if (!this.services) throw new Error("services is not provided");
-
-					return this.services
-						.userBalanceMovingTransaction
-						.queueJobs
-						.reduceBalance(job.data);
+					return this.services.userBalanceMovingTransaction.queueJobs.reduceBalance(job.data);
 				} catch (error) {
 					throw error;
 				}

@@ -12,6 +12,12 @@ export class Service {
 				message: "UNKNOWN_ERROR",
 			},
 		},
+		WORK_IN_PROGRESS: {
+			error: {
+				code: 1,
+				message: "WORK_IN_PROGRESS",
+			},
+		},
 	};
 	user = {
 		NOT_FOUND: {

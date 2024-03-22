@@ -1,4 +1,4 @@
-import * as crypto from "node:crypto";
+import assert from "node:assert";
 import { isMainThread } from "node:worker_threads";
 import path from "node:path";
 import { setTimeout } from "node:timers/promises";
@@ -29,8 +29,10 @@ const config: Types.Config.ConfigOptions = {
 };
 
 export default async () => {
-	return test("main workflow", async (test) => {
-		await test.test("db down", async () => {
+	const url = `${config.SERVER_URI}:${config.SERVER_PORT}`;
+
+	return test("main workflow", async (ctx) => {
+		await ctx.test("db down", async () => {
 			const dbConfig = {
 				database: config.DB_POSTGRE_DATABASE,
 				host: config.DB_POSTGRE_HOST,
@@ -41,18 +43,15 @@ export default async () => {
 
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
-			await DbManager
-				.PG
-				.MigrationSystem
-				.Down
-				.start(pool, {
-					pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
-				});
+			await DbManager.PG.MigrationSystem.Down.start(pool, {
+				migrationsTableName: "migration_control",
+				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
+			});
 
 			await DbManager.PG.BaseModel.removeStandardPool(dbConfig);
 		});
 
-		await test.test("db up", async () => {
+		await ctx.test("db up", async () => {
 			const dbConfig = {
 				database: config.DB_POSTGRE_DATABASE,
 				host: config.DB_POSTGRE_HOST,
@@ -63,39 +62,52 @@ export default async () => {
 
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
-			await DbManager
-				.PG
-				.MigrationSystem
-				.Up
-				.start(pool, {
-					migrationsTableName: "migration_control",
-					// pathToJS: path.resolve(process.cwd(), "build", "migrations", "js"),
-					pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
-				});
+			await DbManager.PG.MigrationSystem.Up.start(pool, {
+				migrationsTableName: "migration_control",
+				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
+			});
 
 			await DbManager.PG.BaseModel.removeStandardPool(dbConfig);
 		});
 
-		await test.test("initialize app", async (test) => {
+		await ctx.test("initialize app", async (ctx) => {
 			const server = await init(config);
 
-			await test.test("Service outer methods", async () => {
+			await setTimeout(1000);
+
+			await ctx.test("get-user-balance", async () => {
+				const method = "user/get-balance";
+
+				const res = await fetch(`${url}/api/${method}`, {
+					body: JSON.stringify({
+						id: crypto.randomUUID(),
+						jsonrpc: "2.0",
+						method,
+						params: { id: "1" },
+					}),
+					headers: { "Content-Type": "application/json" },
+					method: "POST",
+				});
+
+				const data = await res.json();
+
+				assert.equal(data.result.amount, 10000);
+			});
+
+			await ctx.test("update-user-balance-1", async () => {
 				const promises = [];
-				const method = "user-balance-moving-transaction/update-user-balance";
-				const url = `${config.SERVER_URI}:${config.SERVER_PORT}`;
+				const method = "user-balance-moving-transaction/update-user-balance-1";
 
-				await setTimeout(1000);
-
-				for (let idx = 0; idx < 100; idx++) {
+				for (let idx = 0; idx < 10; idx++) {
 					promises.push(fetch(`${url}/api/${method}`, {
 						body: JSON.stringify({
-							id: crypto.randomUUID({ disableEntropyCache: true }),
+							id: crypto.randomUUID(),
 							jsonrpc: "2.0",
 							method,
 							params: {
-								deltaChange: 133,
+								deltaChange: 1330,
 								operation: "reduce",
-								uniqueIdentificator: crypto.randomUUID({ disableEntropyCache: true }),
+								uniqueIdentificator: crypto.randomUUID(),
 								userId: "1",
 							},
 						}),
@@ -105,12 +117,98 @@ export default async () => {
 				}
 
 				await Promise.all(promises);
+
+				await setTimeout(10000);
+
+				{
+					const method = "user/get-balance";
+
+					const res = await fetch(`${url}/api/${method}`, {
+						body: JSON.stringify({
+							id: crypto.randomUUID(),
+							jsonrpc: "2.0",
+							method,
+							params: { id: "1" },
+						}),
+						headers: { "Content-Type": "application/json" },
+						method: "POST",
+					});
+
+					const data = await res.json();
+
+					assert.equal(data.result.amount >= 0, true);
+				}
+			});
+
+			await ctx.test("get-user-balance-2", async () => {
+				const method = "user/get-balance";
+
+				const res = await fetch(`${url}/api/${method}`, {
+					body: JSON.stringify({
+						id: crypto.randomUUID(),
+						jsonrpc: "2.0",
+						method,
+						params: { id: "2" },
+					}),
+					headers: { "Content-Type": "application/json" },
+					method: "POST",
+				});
+
+				const data = await res.json();
+
+				assert.equal(data.result.amount, 10000);
+			});
+
+			await ctx.test("update-user-balance-2", async () => {
+				const promises = [];
+				const method = "user-balance-moving-transaction/update-user-balance-2";
+
+				for (let idx = 0; idx < 10; idx++) {
+					promises.push(fetch(`${url}/api/${method}`, {
+						body: JSON.stringify({
+							id: crypto.randomUUID(),
+							jsonrpc: "2.0",
+							method,
+							params: {
+								deltaChange: 1330,
+								operation: "reduce",
+								uniqueIdentificator: crypto.randomUUID(),
+								userId: "2",
+							},
+						}),
+						headers: { "Content-Type": "application/json" },
+						method: "POST",
+					}));
+				}
+
+				await Promise.all(promises);
+
+				await setTimeout(10000);
+
+				{
+					const method = "user/get-balance";
+
+					const res = await fetch(`${url}/api/${method}`, {
+						body: JSON.stringify({
+							id: crypto.randomUUID(),
+							jsonrpc: "2.0",
+							method,
+							params: { id: "2" },
+						}),
+						headers: { "Content-Type": "application/json" },
+						method: "POST",
+					});
+
+					const data = await res.json();
+
+					assert.equal(data.result.amount >= 0, true);
+				}
 			});
 
 			await server.close();
 		});
 
-		await test.test("db down", async () => {
+		await ctx.test("db down", async () => {
 			const dbConfig = {
 				database: config.DB_POSTGRE_DATABASE,
 				host: config.DB_POSTGRE_HOST,
@@ -121,13 +219,10 @@ export default async () => {
 
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
-			await DbManager
-				.PG
-				.MigrationSystem
-				.Down
-				.start(pool, {
-					pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
-				});
+			await DbManager.PG.MigrationSystem.Down.start(pool, {
+				migrationsTableName: "migration_control",
+				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
+			});
 
 			await DbManager.PG.BaseModel.removeStandardPool(dbConfig);
 		});

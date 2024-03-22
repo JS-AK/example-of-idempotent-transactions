@@ -4,14 +4,14 @@ import * as Types from "../../types/index.js";
 import { IBaseClass } from "./base-class.js";
 import Validator from "./validator.js";
 
-export type IBaseClassOpts<T> = {
+export type IBaseClassOpts<T extends { params: object; result: object; }> = {
 	logger: Types.System.Logger.Service;
 	request: { id: string | number; method: string; };
-	schemas?: { params: Ajv.JSONSchemaType<T>; result: Ajv.JSONSchemaType<T>; };
+	schemas?: { params: Ajv.JSONSchemaType<T["params"]>; result: Ajv.JSONSchemaType<T["result"]>; };
 	services: Types.ServiceLocator.default["services"];
 };
 
-export class JsonRpcV2<T extends object> implements IBaseClass {
+export class JsonRpcV2<T extends { params: object; result: object; }> implements IBaseClass<T> {
 	#validateParamsFunction: Ajv.ValidateFunction | null;
 	#validateResultFunction: Ajv.ValidateFunction | null;
 
@@ -21,7 +21,7 @@ export class JsonRpcV2<T extends object> implements IBaseClass {
 	schemas;
 	services;
 
-	constructor(params: T, options: IBaseClassOpts<T>) {
+	constructor(params: T["params"], options: IBaseClassOpts<T>) {
 		this.#validateParamsFunction = null;
 		this.#validateResultFunction = null;
 
@@ -32,7 +32,7 @@ export class JsonRpcV2<T extends object> implements IBaseClass {
 		this.services = options.services;
 	}
 
-	async execute(): Promise<Types.Common.TDataError> {
+	async execute(): Promise<Types.Common.TDataError<T["result"]>> {
 		throw new Error("NOT IMPLEMENTED");
 	}
 
@@ -98,11 +98,14 @@ export class JsonRpcV2<T extends object> implements IBaseClass {
 
 	// STATIC METHODS
 
-	static getMethodName() {
+	static getMethodName(): string {
 		throw new Error("NOT IMPLEMENTED");
 	}
 
-	static getSchemas() {
+	static getSchemas<P, R>(): {
+		params: Ajv.JSONSchemaType<P>;
+		result: Ajv.JSONSchemaType<R>;
+	} {
 		throw new Error("NOT IMPLEMENTED");
 	}
 }
