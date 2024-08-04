@@ -1,16 +1,18 @@
-import * as DbManager from "@js-ak/db-manager";
+import { PG } from "@js-ak/db-manager";
 
 import * as TransactionTypes from "../types/index.js";
-import * as Types from "../../../types/index.js";
 
-export default async function (
-	options: {
-		pool: DbManager.PG.BaseModel["pool"];
-		repository: Types.ServiceLocator.default["dal"]["repository"];
+import { RepositoryManager } from "../../repository-manager.js";
+
+export async function exec(
+	this: {
+		pool: PG.BaseModel["pool"];
+		queryBuilderFactory: PG.QueryBuilderFactory;
+		repository: RepositoryManager["repository"];
 	},
 	payload: TransactionTypes.UserBalanceTransactionCreate,
 ) {
-	const { pool, repository } = options;
+	const { pool, queryBuilderFactory, repository } = this;
 	const { create } = payload;
 
 	const client = await pool.connect();
@@ -18,7 +20,8 @@ export default async function (
 	try {
 		await client.query("BEGIN");
 
-		const [userBalanceTransaction] = await repository.userBalanceMovingTransaction.model.queryBuilder()
+		const [userBalanceTransaction] = await queryBuilderFactory
+			.createQueryBuilder({ client, dataSource: repository.userBalanceMovingTransaction.tableName })
 			.insert({
 				params: {
 					delta_change: create.delta_change,
@@ -32,12 +35,12 @@ export default async function (
 
 		if (!userBalanceTransaction) throw new Error("Something went wrong");
 
-		const { rows: [user] } = await client.query<{ balance: string; }>(`
-			UPDATE ${repository.user.tableName}
-			SET balance = balance - $1
-			WHERE id = $2
-			RETURNING balance
-		`, [create.delta_change, create.user_id]);
+		const [user] = await queryBuilderFactory
+			.createQueryBuilder({ client, dataSource: repository.user.tableName })
+			.rawUpdate("balance = balance - $1", [create.delta_change])
+			.where({ params: { id: create.user_id } })
+			.returning(["balance"])
+			.execute<{ balance: string; }>();
 
 		if (!user) throw new Error("Something went wrong");
 		if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");

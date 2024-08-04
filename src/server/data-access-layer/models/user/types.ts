@@ -1,15 +1,4 @@
-export type CreateFields = Pick<TableFields,
-	| "balance"
-	| "email"
->;
-
-export type EntityForCheck = {
-	id: TableFields["id"];
-};
-
-export type SearchFields = Partial<TableFields>;
-
-export type TableFields = {
+export type CoreFields = {
 	id: string;
 
 	balance: number;
@@ -19,8 +8,6 @@ export type TableFields = {
 	updated_at: Date | null;
 };
 
-export type TableKeys = keyof TableFields;
-
-export type UpdateFields = Partial<Pick<TableFields,
-	| "balance"
->>;
+export type EntityForCheck = {
+	id: CoreFields["id"];
+};

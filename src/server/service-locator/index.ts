@@ -1,8 +1,8 @@
 import * as Types from "../types/index.js";
 
-import * as Dal from "../data-access-layer/index.js";
 import * as Services from "../services/index.js";
 import * as System from "../system/index.js";
+import { RepositoryManager } from "../data-access-layer/repository-manager.js";
 
 const store: { sl?: ServiceLocator; } = { sl: undefined };
 
@@ -26,7 +26,7 @@ export default class ServiceLocator {
 			service: systemLogger.child({ pSource: "SERVICE", pThread: this.getThread() }),
 		};
 
-		this.dal = Dal.init({
+		this.dal = new RepositoryManager({
 			config: {
 				database: this.config.DB_POSTGRE_DATABASE,
 				host: this.config.DB_POSTGRE_HOST,
@@ -58,7 +58,6 @@ export default class ServiceLocator {
 			}),
 			user: new Services.User.Service.default({
 				businessError: this.system.businessError,
-				crypto: this.system.crypto,
 				dal: this.dal,
 				logger: this.loggers.service,
 			}),

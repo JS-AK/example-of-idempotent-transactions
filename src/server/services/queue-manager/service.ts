@@ -34,6 +34,10 @@ export default class Service extends BaseService {
 	#initQueue(queueName: string) {
 		const [queue, queueEvents] = this.#bullmq.createQueueData(queueName);
 
+		queue.on("error", (error) => {
+			this.#logger.error(`${queueName}. Queue error with reason: ${error.message}`);
+		});
+
 		if (this.#config.IS_MAIN_THREAD) {
 			queueEvents.on("waiting", ({ jobId }) => {
 				this.#logger.info(`${queueName}. Job ${jobId} is waiting`);

@@ -4,8 +4,9 @@ import BaseService from "../base-service.js";
 
 export default class Service extends BaseService {
 	#businessError;
-	#dal;
 	#logger;
+	#repository;
+	#transactions;
 
 	constructor(data: {
 		businessError: Types.System.BusinessError.Service;
@@ -15,8 +16,10 @@ export default class Service extends BaseService {
 		super();
 
 		this.#businessError = data.businessError;
-		this.#dal = data.dal;
 		this.#logger = data.logger;
+
+		this.#repository = data.dal.repository.userBalanceMovingTransaction;
+		this.#transactions = data.dal.transactions;
 	}
 
 	#check = {
@@ -39,10 +42,7 @@ export default class Service extends BaseService {
 				}
 
 				{
-					const userBalanceMovingTransaction = await this.#dal
-						.repository
-						.userBalanceMovingTransaction
-						.getEntityForCheck({ uniqueIdentificator });
+					const userBalanceMovingTransaction = await this.#repository.getEntityForCheck({ uniqueIdentificator });
 
 					if (userBalanceMovingTransaction) {
 						return this.#businessError.userBalanceMovingTransaction.UNIQUE_IDENTIFICATOR_ALREADY_EXISTS;
@@ -57,10 +57,7 @@ export default class Service extends BaseService {
 	async #getEntityForCheck(
 		payload: { uniqueIdentificator?: string; },
 	): Promise<Types.Common.TDataError<Types.Dal.UserBalanceMovingTransaction.Types.EntityForCheck>> {
-		const user = await this.#dal
-			.repository
-			.userBalanceMovingTransaction
-			.getEntityForCheck(payload);
+		const user = await this.#repository.getEntityForCheck(payload);
 
 		if (!user) {
 			return this.#businessError.userBalanceMovingTransaction.NOT_FOUND;
@@ -75,7 +72,7 @@ export default class Service extends BaseService {
 			uniqueIdentificator: string;
 			userId: string;
 		}) => {
-			await this.#dal.transactions["user-balance-transaction-create-1"]({
+			await this.#transactions["user-balance-transaction-create-1"]({
 				create: {
 					delta_change: data.deltaChange,
 					operation: "reduce",
@@ -146,7 +143,7 @@ export default class Service extends BaseService {
 				}
 
 				case "reduce": {
-					const data = await this.#dal.transactions["user-balance-transaction-create-2"]({
+					const data = await this.#transactions["user-balance-transaction-create-2"]({
 						create: {
 							delta_change: payload.deltaChange,
 							operation: "reduce",

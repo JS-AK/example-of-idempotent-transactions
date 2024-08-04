@@ -1,38 +1,24 @@
 // ----- Dependencies ----------------------------
-import * as DbManager from "@js-ak/db-manager";
-
-import * as Types from "./types.js";
+import { PG } from "@js-ak/db-manager";
 
 // ----- Class ------------------------------
-export class Model extends DbManager.PG.BaseModel {
-	constructor(creds: DbManager.PG.ModelTypes.TDBCreds) {
+export class Model extends PG.Model.BaseTable {
+	constructor(creds: PG.ModelTypes.TDBCreds) {
 		super(
 			{
-				createField,
-				primaryKey,
-				tableFields,
-				tableName,
-				updateField,
+				createField: { title: "created_at", type: "timestamp" },
+				primaryKey: "id",
+				tableFields: [
+					"id",
+					"balance",
+					"email",
+					"created_at",
+					"updated_at",
+				],
+				tableName: "users",
+				updateField: { title: "updated_at", type: "timestamp" },
 			},
 			creds,
 		);
 	}
 }
-
-// ----- Table properties ----------------------
-const tableName = "users"; // table from DB
-const primaryKey = "id"; // primaryId from table
-const createField = { title: "created_at", type: "timestamp" } as const;
-const updateField = { title: "updated_at", type: "timestamp" } as const;
-const tableFields: Types.TableKeys[] = [
-	"balance",
-	"created_at",
-	"email",
-	"id",
-	"updated_at",
-];
-
-// ----- queries -----------------------
-// const queries = {
-
-// };
