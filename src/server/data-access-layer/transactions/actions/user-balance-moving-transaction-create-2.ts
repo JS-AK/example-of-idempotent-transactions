@@ -27,8 +27,11 @@ export async function exec(
 			.where({ params: { id: create.user_id } })
 			.execute<{ id: string; }>();
 
-		const [userBalanceTransaction] = await repository.userBalanceMovingTransaction.model
-			.queryBuilder({ client })
+		const [userBalanceTransaction] = await queryBuilderFactory
+			.createQueryBuilder({
+				client,
+				dataSource: repository.userBalanceMovingTransaction.tableName,
+			})
 			.insert({
 				params: {
 					delta_change: create.delta_change,
@@ -43,7 +46,10 @@ export async function exec(
 		if (!userBalanceTransaction) throw new Error("Something went wrong");
 
 		const [user] = await queryBuilderFactory
-			.createQueryBuilder({ client, dataSource: repository.user.tableName })
+			.createQueryBuilder({
+				client,
+				dataSource: repository.user.tableName,
+			})
 			.rawUpdate("balance = balance - $1", [create.delta_change])
 			.where({ params: { id: create.user_id } })
 			.returning(["balance"])
