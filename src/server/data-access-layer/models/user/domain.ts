@@ -7,7 +7,7 @@ export default class Domain extends PG.Domain.BaseTable<Model, {
 	CoreFields: Types.CoreFields;
 }> {
 	constructor(creds: PG.ModelTypes.TDBCreds) {
-		super({ model: new Model(creds) });
+		super({ model: new Model(creds, { isLoggerEnabled: true }) });
 	}
 
 	async getEntityForCheck(data: { id?: string; }) {

@@ -16,16 +16,45 @@ type Config = {
 export class RepositoryManager {
 	#config;
 	#logger;
-
-	repository;
-	transactions;
+	#queryBuilderFactory;
+	#repository;
+	#standardPool;
+	#transactionPool;
+	#transactions;
 
 	constructor(options: { config: Config; logger: Types.System.Logger.Service; }) {
 		this.#config = options.config;
 		this.#logger = options.logger;
-		this.repository = this.#createRepository();
-		this.transactions = this.#setupTransactions();
+		this.#standardPool = PG.BaseModel.getStandardPool(this.#config);
+		this.#transactionPool = PG.BaseModel.getTransactionPool(this.#config);
+		this.#repository = this.#createRepository();
+		this.#transactions = this.#setupTransactions();
+		this.#queryBuilderFactory = new PG.QueryBuilderFactory(this.#standardPool, {
+			isLoggerEnabled: true,
+			logger: this.#logger,
+		});
+
 		this.#setupErrorHandling();
+	}
+
+	get queryBuilderFactory() {
+		return this.#queryBuilderFactory;
+	}
+
+	get repository() {
+		return this.#repository;
+	}
+
+	get standardPool(): PG.BaseModel["pool"] {
+		return this.#standardPool;
+	}
+
+	get transactionPool(): PG.BaseModel["pool"] {
+		return this.#transactionPool;
+	}
+
+	get transactions() {
+		return this.#transactions;
 	}
 
 	#createRepository() {
@@ -36,31 +65,27 @@ export class RepositoryManager {
 	}
 
 	#setupTransactions() {
-		const transactionData = {
-			pool: PG.BaseModel.getTransactionPool(this.#config),
-			queryBuilderFactory: new PG.QueryBuilderFactory(PG.BaseModel.getTransactionPool(this.#config)),
-			repository: this.repository,
-		} as const;
-
 		return {
 			"user-balance-transaction-create-1":
-				Transactions.Actions.UserBalanceMovingTransactionCreate1.exec.bind(transactionData),
+				Transactions.Actions.UserBalanceMovingTransactionCreate1.exec.bind(this),
 			"user-balance-transaction-create-2":
-				Transactions.Actions.UserBalanceMovingTransactionCreate2.exec.bind(transactionData),
+				Transactions.Actions.UserBalanceMovingTransactionCreate2.exec.bind(this),
 		} as const;
 	}
 
 	#setupErrorHandling() {
 		const handleError = (error: Error) => this.#logger.error(error.message);
 
+		const setupPoolErrorHandling = (pool: PG.BaseModel["pool"]) => {
+			pool.on("error", handleError);
+			pool.on("connect", (client) => { client.on("error", handleError); });
+		};
+
 		const standardPool = PG.BaseModel.getStandardPool(this.#config);
 		const transactionPool = PG.BaseModel.getTransactionPool(this.#config);
 
-		standardPool.on("error", handleError);
-		transactionPool.on("error", handleError);
-
-		standardPool.on("connect", (client) => { client.on("error", handleError); });
-		transactionPool.on("connect", (client) => { client.on("error", handleError); });
+		setupPoolErrorHandling(standardPool);
+		setupPoolErrorHandling(transactionPool);
 	}
 
 	async shutdown() {

@@ -3,7 +3,7 @@ import { PG } from "@js-ak/db-manager";
 
 // ----- Class ------------------------------
 export class Model extends PG.Model.BaseTable {
-	constructor(creds: PG.ModelTypes.TDBCreds) {
+	constructor(creds: PG.ModelTypes.TDBCreds, options?: PG.ModelTypes.TDBOptions) {
 		super(
 			{
 				createField: { title: "created_at", type: "timestamp" },
@@ -19,6 +19,7 @@ export class Model extends PG.Model.BaseTable {
 				updateField: { title: "updated_at", type: "timestamp" },
 			},
 			creds,
+			options,
 		);
 	}
 }

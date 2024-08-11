@@ -1,27 +1,24 @@
-import { PG } from "@js-ak/db-manager";
-
 import * as TransactionTypes from "../types/index.js";
 import { RepositoryManager } from "../../repository-manager.js";
 
 export async function exec(
-	this: {
-		pool: PG.BaseModel["pool"];
-		queryBuilderFactory: PG.QueryBuilderFactory;
-		repository: RepositoryManager["repository"];
-	},
+	this: RepositoryManager,
 	payload: TransactionTypes.UserBalanceTransactionCreate,
 ) {
-	const { pool, queryBuilderFactory, repository } = this;
+	const { queryBuilderFactory, repository, transactionPool } = this;
 
-	const client = await pool.connect();
+	const client = await transactionPool.connect();
 
 	try {
 		await client.query("BEGIN");
 
 		const { create } = payload;
 
-		await repository.user.model
-			.queryBuilder({ client })
+		await queryBuilderFactory
+			.createQueryBuilder({
+				client,
+				dataSource: repository.user.tableName,
+			})
 			.select(["*"])
 			.rawFor("FOR UPDATE")
 			.where({ params: { id: create.user_id } })
@@ -32,14 +29,7 @@ export async function exec(
 				client,
 				dataSource: repository.userBalanceMovingTransaction.tableName,
 			})
-			.insert({
-				params: {
-					delta_change: create.delta_change,
-					operation: create.operation,
-					unique_identificator: create.unique_identificator,
-					user_id: create.user_id,
-				},
-			})
+			.insert({ params: create })
 			.returning(["id"])
 			.execute<{ id: string; }>();
 
