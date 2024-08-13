@@ -1,15 +1,10 @@
 import { PG } from "@js-ak/db-manager";
 
 import * as Types from "./types.js";
-import { Model } from "./model.js";
 
-export default class Domain extends PG.Domain.BaseTable<Model, {
-	CoreFields: Types.CoreFields;
-}> {
-	constructor(creds: PG.ModelTypes.TDBCreds) {
-		super({ model: new Model(creds, { isLoggerEnabled: true }) });
-	}
+import { Model, initModel } from "./model.js";
 
+class Domain extends PG.Domain.BaseTable<Model, { CoreFields: Types.CoreFields; }> {
 	async getEntityForCheck(data: { id?: string; }) {
 		const { one } = await super.getOneByParams({
 			params: { id: data.id },
@@ -28,3 +23,7 @@ export default class Domain extends PG.Domain.BaseTable<Model, {
 		return Number(one?.balance) || 0;
 	}
 }
+
+export const init = (creds: PG.ModelTypes.TDBCreds) => {
+	return new Domain({ model: initModel(creds) });
+};

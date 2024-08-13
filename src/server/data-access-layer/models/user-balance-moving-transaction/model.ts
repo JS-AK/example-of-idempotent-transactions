@@ -1,40 +1,29 @@
 // ----- Dependencies ----------------------------
-import * as DbManager from "@js-ak/db-manager";
-
-import * as Types from "./types.js";
+import { PG } from "@js-ak/db-manager";
 
 // ----- Class ------------------------------
-export class Model extends DbManager.PG.BaseModel {
-	constructor(creds: DbManager.PG.ModelTypes.TDBCreds) {
-		super(
-			{
-				createField,
-				primaryKey,
-				tableFields,
-				tableName,
-				updateField,
-			},
-			creds,
-		);
-	}
-}
+export class Model extends PG.Model.BaseTable { }
 
-// ----- Table properties ----------------------
-const tableName = "user_balance_moving_transactions"; // table from DB
-const primaryKey = "id"; // primaryId from table
-const createField = { title: "created_at", type: "timestamp" } as const;
-const updateField = { title: "updated_at", type: "timestamp" } as const;
-const tableFields: Types.TableKeys[] = [
-	"created_at",
-	"delta_change",
-	"id",
-	"operation",
-	"unique_identificator",
-	"updated_at",
-	"user_id",
-];
+export const initModel = (creds: PG.ModelTypes.TDBCreds) => {
+	return new Model(
+		{
+			createField: { title: "created_at", type: "timestamp" },
+			primaryKey: "id",
+			tableFields: [
+				"id",
 
-// ----- queries -----------------------
-// const queries = {
+				"user_id",
 
-// };
+				"delta_change",
+				"operation",
+				"unique_identificator",
+
+				"created_at",
+				"updated_at",
+			],
+			tableName: "user_balance_moving_transactions",
+			updateField: { title: "updated_at", type: "timestamp" },
+		},
+		creds,
+	);
+};
