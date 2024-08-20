@@ -2,9 +2,9 @@ import { PG } from "@js-ak/db-manager";
 
 import * as Types from "./types.js";
 
-import { Model, initModel } from "./model.js";
+import { model } from "./model.js";
 
-class Domain extends PG.Domain.BaseTable<Model, { CoreFields: Types.CoreFields; }> {
+class Domain extends PG.Domain.BaseTable<PG.Model.BaseTable, { CoreFields: Types.CoreFields; }> {
 	async getEntityForCheck(data: { id?: string; }) {
 		const { one } = await super.getOneByParams({
 			params: { id: data.id },
@@ -24,6 +24,5 @@ class Domain extends PG.Domain.BaseTable<Model, { CoreFields: Types.CoreFields; 
 	}
 }
 
-export const init = (creds: PG.ModelTypes.TDBCreds) => {
-	return new Domain({ model: initModel(creds) });
-};
+export const domain = (creds: PG.ModelTypes.TDBCreds) =>
+	new Domain({ model: model(creds) });

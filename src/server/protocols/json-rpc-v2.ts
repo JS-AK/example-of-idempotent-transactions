@@ -80,6 +80,7 @@ export class Protocol {
 				{
 					logger: this.#sl.loggers.api,
 					request: { id: jsonrpc.id, method },
+					schemas: ApiClass.getSchemas(),
 					services: this.#sl.services,
 				},
 			);

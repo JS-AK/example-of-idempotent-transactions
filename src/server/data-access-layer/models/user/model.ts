@@ -1,26 +1,20 @@
-// ----- Dependencies ----------------------------
 import { PG } from "@js-ak/db-manager";
 
-// ----- Class ------------------------------
-export class Model extends PG.Model.BaseTable { }
+export const model = (creds: PG.ModelTypes.TDBCreds) => new PG.Model.BaseTable(
+	{
+		createField: { title: "created_at", type: "timestamp" },
+		primaryKey: "id",
+		tableFields: [
+			"id",
 
-export const initModel = (creds: PG.ModelTypes.TDBCreds) => {
-	return new Model(
-		{
-			createField: { title: "created_at", type: "timestamp" },
-			primaryKey: "id",
-			tableFields: [
-				"id",
+			"balance",
+			"email",
 
-				"balance",
-				"email",
-
-				"created_at",
-				"updated_at",
-			],
-			tableName: "users",
-			updateField: { title: "updated_at", type: "timestamp" },
-		},
-		creds,
-	);
-};
+			"created_at",
+			"updated_at",
+		],
+		tableName: "users",
+		updateField: { title: "updated_at", type: "timestamp" },
+	},
+	creds,
+);

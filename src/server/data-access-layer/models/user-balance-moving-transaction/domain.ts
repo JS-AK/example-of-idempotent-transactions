@@ -2,9 +2,9 @@ import { PG } from "@js-ak/db-manager";
 
 import * as Types from "./types.js";
 
-import { Model, initModel } from "./model.js";
+import { model } from "./model.js";
 
-export default class Domain extends PG.Domain.BaseTable<Model, {
+export default class Domain extends PG.Domain.BaseTable<PG.Model.BaseTable, {
 	CreateFields: Types.CreateFields;
 	SearchFields: Types.SearchFields;
 	CoreFields: Types.TableFields;
@@ -20,6 +20,5 @@ export default class Domain extends PG.Domain.BaseTable<Model, {
 	}
 }
 
-export const init = (creds: PG.ModelTypes.TDBCreds) => {
-	return new Domain({ model: initModel(creds) });
-};
+export const domain = (creds: PG.ModelTypes.TDBCreds) =>
+	new Domain({ model: model(creds) });

@@ -59,8 +59,8 @@ export class RepositoryManager {
 
 	#createRepository() {
 		return {
-			user: Models.User.Domain.init(this.#config),
-			userBalanceMovingTransaction: Models.UserBalanceMovingTransaction.Domain.init(this.#config),
+			user: Models.User.domain(this.#config),
+			userBalanceMovingTransaction: Models.UserBalanceMovingTransaction.domain(this.#config),
 		} as const;
 	}
 
