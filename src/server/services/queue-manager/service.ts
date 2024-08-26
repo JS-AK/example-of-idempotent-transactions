@@ -139,8 +139,16 @@ export default class Service extends BaseService {
 	};
 
 	async shutdown(): Promise<void> {
-		await this.#queues["user-balance-moving-transaction-reduce"][0].close();
-		await this.#queues["user-balance-moving-transaction-reduce"][1].close();
-		await this.#queues["user-balance-moving-transaction-reduce"][2].close();
+		const [
+			queue,
+			queueEvents,
+			worker,
+		] = this.#queues["user-balance-moving-transaction-reduce"];
+
+		await Promise.all([
+			queue.close(),
+			queueEvents.close(),
+			worker.close(),
+		]);
 	}
 }

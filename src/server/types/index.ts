@@ -1,6 +1,6 @@
 export * as Config from "../config/index.js";
 
-export * as Dal from "../data-access-layer/models/index.js";
+export * as Dal from "../data-access-layer/index.js";
 
 export * as ServiceLocator from "../service-locator/index.js";
 

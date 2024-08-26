@@ -7,6 +7,7 @@ export default class Service extends BaseService {
 	#logger;
 	#repository;
 	#transactions;
+	#dal;
 
 	constructor(data: {
 		businessError: Types.System.BusinessError.Service;
@@ -20,6 +21,7 @@ export default class Service extends BaseService {
 
 		this.#repository = data.dal.repository.userBalanceMovingTransaction;
 		this.#transactions = data.dal.transactions;
+		this.#dal = data.dal;
 	}
 
 	#check = {
@@ -86,6 +88,24 @@ export default class Service extends BaseService {
 	};
 
 	innerSpace = {
+		createOne:
+			async (payload: { deltaChange: number; uniqueIdentificator: string; userId: string; }, client: Types.Dal.PoolClient) => {
+				const [userBalanceTransaction] = await this.#repository
+					.model
+					.queryBuilder({ client })
+					.insert({
+						params: {
+							delta_change: payload.deltaChange,
+							operation: "reduce",
+							unique_identificator: payload.uniqueIdentificator,
+							user_id: payload.userId,
+						},
+					})
+					.returning(["id"])
+					.execute<{ id: string; }>();
+
+				return userBalanceTransaction;
+			},
 		getEntityForCheck:
 			async (data: { uniqueIdentificator?: string; }) => this.#getEntityForCheck(data),
 	};
@@ -143,7 +163,34 @@ export default class Service extends BaseService {
 				}
 
 				case "reduce": {
-					const data = await this.#transactions["user-balance-transaction-create-2"]({
+					const data = await this.#dal.transactionManagerExecute(async (client) => {
+						await this.services
+							.user
+							.innerSpace
+							.holdEntityForUpdate({ id: payload.userId }, client);
+
+						const userBalanceTransaction = await this
+							.innerSpace
+							.createOne(payload, client);
+
+						if (!userBalanceTransaction) throw new Error("Something went wrong");
+
+						const user = await this.services
+							.user
+							.innerSpace
+							.update({ deltaChange: payload.deltaChange, id: payload.userId }, client);
+
+						if (!user) throw new Error("Something went wrong");
+						if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");
+
+						return { id: userBalanceTransaction.id };
+					}).catch((e) => this.#logger.error(e.message));
+
+					if (!data) return this.#businessError.common.UNKNOWN_ERROR;
+
+					return { data: true };
+
+					/* const data = await this.#transactions["user-balance-transaction-create-2"]({
 						create: {
 							delta_change: payload.deltaChange,
 							operation: "reduce",
@@ -154,7 +201,7 @@ export default class Service extends BaseService {
 
 					if (!data) return this.#businessError.common.UNKNOWN_ERROR;
 
-					return { data: true };
+					return { data: true }; */
 				}
 
 				default: {

@@ -13,6 +13,8 @@ type Config = {
 	user: string;
 };
 
+export type PoolClient = PG.Model.BaseTable["pool"];
+
 export class RepositoryManager {
 	#config;
 	#logger;
@@ -73,6 +75,16 @@ export class RepositoryManager {
 		} as const;
 	}
 
+	transactionManagerExecute<R>(
+		fn: Parameters<typeof PG.TransactionManager.execute<R>>[0],
+		options?: Omit<Parameters<typeof PG.TransactionManager.execute<R>>[1], "pool">,
+	) {
+		return PG.TransactionManager.execute(fn, {
+			isolationLevel: options?.isolationLevel,
+			pool: this.transactionPool,
+		});
+	}
+
 	#setupErrorHandling() {
 		const handleError = (error: Error) => this.#logger.error(error.message);
 
@@ -81,15 +93,11 @@ export class RepositoryManager {
 			pool.on("connect", (client) => { client.on("error", handleError); });
 		};
 
-		const standardPool = PG.BaseModel.getStandardPool(this.#config);
-		const transactionPool = PG.BaseModel.getTransactionPool(this.#config);
-
-		setupPoolErrorHandling(standardPool);
-		setupPoolErrorHandling(transactionPool);
+		setupPoolErrorHandling(this.standardPool);
+		setupPoolErrorHandling(this.transactionPool);
 	}
 
 	async shutdown() {
-		await PG.BaseModel.removeStandardPool(this.#config);
-		await PG.BaseModel.removeTransactionPool(this.#config);
+		await PG.connection.shutdown();
 	}
 }

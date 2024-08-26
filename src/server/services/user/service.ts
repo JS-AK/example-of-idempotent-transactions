@@ -35,6 +35,28 @@ export default class Service extends BaseService {
 	innerSpace = {
 		getEntityForCheck:
 			async (data: { id?: string; }) => this.#getEntityForCheck(data),
+		holdEntityForUpdate:
+			async (payload: { id: string; }, client: Types.Dal.PoolClient) => {
+				const [entity] = await this.#repository.model
+					.queryBuilder({ client })
+					.select(["*"])
+					.rawFor("FOR UPDATE")
+					.where({ params: { id: payload.id } })
+					.execute<{ id: string; }>();
+
+				return entity;
+			},
+		update:
+			async (payload: { deltaChange: number; id: string; }, client: Types.Dal.PoolClient) => {
+				const [entity] = await this.#repository.model
+					.queryBuilder({ client })
+					.rawUpdate("balance = balance - $1", [payload.deltaChange])
+					.where({ params: { id: payload.id } })
+					.returning(["balance"])
+					.execute<{ balance: string; }>();
+
+				return entity;
+			},
 	};
 
 	outerSpace = {
