@@ -17,10 +17,17 @@ const config: Types.Config.ConfigOptions = {
 	DB_POSTGRE_USER: "postgres",
 
 	IS_MAIN_THREAD: isMainThread,
+	IS_TEST: true,
 
-	REDIS_BULLMQ_HOST: "localhost",
-	REDIS_BULLMQ_PASSWORD: "redis_password",
-	REDIS_BULLMQ_PORT: 6379,
+	JWT_ACCESS: "JWT_ACCESS",
+	JWT_ACCESS_TTL: 60 * 60 * 1000,
+	JWT_AUDIENCE: "JWT_AUDIENCE",
+	JWT_ISSUER: "JWT_ISSUER",
+	JWT_SECRET: "JWT_SECRET",
+
+	REDIS_HOST: "localhost",
+	REDIS_PASSWORD: "redis_password",
+	REDIS_PORT: 6379,
 
 	SERVER_HOST: "localhost",
 	SERVER_MODE: "DEV",
@@ -28,22 +35,23 @@ const config: Types.Config.ConfigOptions = {
 	SERVER_URI: "http://localhost",
 };
 
+const dbConfig = {
+	database: config.DB_POSTGRE_DATABASE,
+	host: config.DB_POSTGRE_HOST,
+	password: config.DB_POSTGRE_PASSWORD,
+	port: config.DB_POSTGRE_PORT,
+	user: config.DB_POSTGRE_USER,
+};
+
 export default async () => {
 	const url = `${config.SERVER_URI}:${config.SERVER_PORT}`;
 
 	return test("main workflow", async (ctx) => {
 		await ctx.test("db down", async () => {
-			const dbConfig = {
-				database: config.DB_POSTGRE_DATABASE,
-				host: config.DB_POSTGRE_HOST,
-				password: config.DB_POSTGRE_PASSWORD,
-				port: config.DB_POSTGRE_PORT,
-				user: config.DB_POSTGRE_USER,
-			};
-
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
 			await DbManager.PG.MigrationSystem.Down.start(pool, {
+				logger: false,
 				migrationsTableName: "migration_control",
 				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
 			});
@@ -63,6 +71,7 @@ export default async () => {
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
 			await DbManager.PG.MigrationSystem.Up.start(pool, {
+				logger: false,
 				migrationsTableName: "migration_control",
 				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
 			});
@@ -209,22 +218,15 @@ export default async () => {
 		});
 
 		await ctx.test("db down", async () => {
-			const dbConfig = {
-				database: config.DB_POSTGRE_DATABASE,
-				host: config.DB_POSTGRE_HOST,
-				password: config.DB_POSTGRE_PASSWORD,
-				port: config.DB_POSTGRE_PORT,
-				user: config.DB_POSTGRE_USER,
-			};
-
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
 			await DbManager.PG.MigrationSystem.Down.start(pool, {
+				logger: false,
 				migrationsTableName: "migration_control",
 				pathToSQL: path.resolve(process.cwd(), "src", "migrations", "sql"),
 			});
 
-			await DbManager.PG.BaseModel.removeStandardPool(dbConfig);
+			await DbManager.PG.connection.shutdown();
 		});
 	});
 };

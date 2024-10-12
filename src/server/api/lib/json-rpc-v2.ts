@@ -5,31 +5,47 @@ import { IBaseClass } from "./base-class.js";
 import Validator from "./validator.js";
 
 export type IBaseClassOpts<T extends { params: object; result: object; }> = {
+	sl: Types.ServiceLocator.default;
 	logger: Types.System.Logger.Service;
-	request: { id: string | number; method: string; };
+	permissions?: {
+		user: boolean;
+		admin: boolean;
+		unknown: boolean;
+	};
+	request: {
+		id: string | number;
+		method: string;
+		meta: { authorization?: string; };
+	};
 	schemas?: { params: Ajv.JSONSchemaType<T["params"]>; result: Ajv.JSONSchemaType<T["result"]>; };
 	services: Types.ServiceLocator.default["services"];
 };
 
-export class JsonRpcV2<T extends { params: object; result: object; }> implements IBaseClass<T> {
+export class JsonRpcV2<T extends { params: object; result: object; } = { params: object; result: object; }> implements IBaseClass<T> {
 	#validateParamsFunction: Ajv.ValidateFunction | null;
 	#validateResultFunction: Ajv.ValidateFunction | null;
 
 	logger;
 	params;
+	permissions;
 	request;
 	schemas;
+	sl;
 	services;
+	user: Types.Common.TUserAuth;
 
 	constructor(params: T["params"], options: IBaseClassOpts<T>) {
 		this.#validateParamsFunction = null;
 		this.#validateResultFunction = null;
 
+		this.sl = options.sl;
 		this.logger = options.logger;
 		this.params = params;
+		this.permissions = options.permissions;
 		this.request = options.request;
 		this.schemas = options.schemas;
 		this.services = options.services;
+		this.user = { id: "", role: { title: "unknown" } };
 	}
 
 	async execute(): Promise<Types.Common.TDataError<T["result"]>> {

@@ -10,3 +10,7 @@ export type TDataError<T = unknown> =
 export type TRequiredDeep<T> = T extends Array2OrMore<infer U>
 	? Array2OrMore<TRequiredDeep<U>>
 	: Required<{ [K in keyof T]: TRequiredDeep<T[K]> }>;
+
+export type TUserAuth = { id: string; role: { title: TUserRoles; }; };
+
+export type TUserRoles = "admin" | "user" | "unknown";

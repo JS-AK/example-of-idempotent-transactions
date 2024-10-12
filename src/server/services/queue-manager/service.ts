@@ -7,7 +7,7 @@ export default class Service extends BaseService {
 	#config;
 	#logger;
 
-	#queues: {
+	#queues!: {
 		["user-balance-moving-transaction-reduce"]: [
 			Types.System.BullMQ.Queue,
 			Types.System.BullMQ.QueueEvents,
@@ -25,7 +25,9 @@ export default class Service extends BaseService {
 		this.#bullmq = data.bullmq;
 		this.#config = data.config;
 		this.#logger = data.logger;
+	}
 
+	init(): void {
 		this.#queues = {
 			["user-balance-moving-transaction-reduce"]: this.#initUserBalanceMovingTransactionReduce(),
 		};
@@ -39,6 +41,10 @@ export default class Service extends BaseService {
 		});
 
 		if (this.#config.IS_MAIN_THREAD) {
+			queueEvents.on("error", (error: Error) => {
+				this.#logger.error(`${queueName}. Queue events error with reason: ${error.message}`);
+			});
+
 			queueEvents.on("waiting", ({ jobId }) => {
 				this.#logger.info(`${queueName}. Job ${jobId} is waiting`);
 			});
@@ -139,6 +145,8 @@ export default class Service extends BaseService {
 	};
 
 	async shutdown(): Promise<void> {
+		if (!this.#queues) return;
+
 		const [
 			queue,
 			queueEvents,

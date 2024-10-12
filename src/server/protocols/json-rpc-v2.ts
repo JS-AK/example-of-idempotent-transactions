@@ -4,9 +4,7 @@ import * as Types from "../types/index.js";
 
 import * as Api from "../api/lib/json-rpc-v2.js";
 
-type JsonRpcRequest = {
-	data: Types.System.JsonRpc.Types.Request;
-};
+type JsonRpcRequest = Types.System.JsonRpc.Types.Request;
 
 function GetTimeExec() {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
@@ -21,12 +19,12 @@ function GetTimeExec() {
 			const execTime = Math.round(performance.now() - start);
 
 			if (isHaveError) {
-				const requestText = `Request: ${JSON.stringify(request.data)}`;
+				const requestText = `Request: ${JSON.stringify(request)}`;
 				const responseText = `Response: ${JSON.stringify(result)}`;
 
 				this.logger.warn(`${requestText}. ${responseText}. Execution time: ${execTime}ms`);
 			} else {
-				this.logger.info(`method: ${request.data.method}, id: ${request.data.id}. Execution time: ${execTime}ms`);
+				this.logger.info(`method: ${request.method}, id: ${request.id}. Execution time: ${execTime}ms`);
 			}
 
 			return result;
@@ -54,7 +52,7 @@ export class Protocol {
 
 	// eslint-disable-next-line new-cap
 	@GetTimeExec()
-	async exec(request?: JsonRpcRequest): Promise<Types.System.JsonRpc.Types.Response> {
+	async exec(request: JsonRpcRequest, meta: { authorization?: string; }): Promise<Types.System.JsonRpc.Types.Response> {
 		if (!request) {
 			const jsonrpc = new this.#sl.system.JsonRpc();
 
@@ -65,7 +63,7 @@ export class Protocol {
 				.compare();
 		}
 
-		const jsonrpc = new this.#sl.system.JsonRpc(request.data);
+		const jsonrpc = new this.#sl.system.JsonRpc(request);
 		const error = jsonrpc.validate();
 
 		if (error) return error;
@@ -79,9 +77,10 @@ export class Protocol {
 				params,
 				{
 					logger: this.#sl.loggers.api,
-					request: { id: jsonrpc.id, method },
+					request: { id: jsonrpc.id, meta: meta || {}, method },
 					schemas: ApiClass.getSchemas(),
 					services: this.#sl.services,
+					sl: this.#sl,
 				},
 			);
 

@@ -18,6 +18,8 @@ export default class ServiceLocator {
 
 		const systemLogger = new System.Logger.Service();
 
+		systemLogger.isEnabled = !config.IS_TEST;
+
 		this.loggers = {
 			api: systemLogger.child({ pSource: "API", pThread: this.getThread() }),
 			bullmq: systemLogger.child({ pSource: "BULLMQ", pThread: this.getThread() }),
@@ -41,13 +43,22 @@ export default class ServiceLocator {
 			JsonRpc: System.JsonRpc.Service,
 			bullmq: new System.BullMQ.Service({
 				config: {
-					host: this.config.REDIS_BULLMQ_HOST,
-					password: this.config.REDIS_BULLMQ_PASSWORD,
-					port: this.config.REDIS_BULLMQ_PORT,
+					host: this.config.REDIS_HOST,
+					password: this.config.REDIS_PASSWORD,
+					port: this.config.REDIS_PORT,
 				},
 			}),
 			businessError: new System.BusinessError.Service(),
 			crypto: new System.Crypto.Service(),
+			jwt: new System.Jwt.Service({
+				config: {
+					audience: config.JWT_AUDIENCE,
+					issuer: config.JWT_ISSUER,
+					secret: config.JWT_SECRET,
+					ttl: config.JWT_ACCESS_TTL,
+					type: config.JWT_ACCESS,
+				},
+			}),
 		};
 
 		this.services = {
@@ -68,9 +79,9 @@ export default class ServiceLocator {
 			}),
 		};
 
-		Object.values(this.services).forEach((e) => {
-			if (e instanceof Services.BaseService.default) {
-				e.injectServices(this.services);
+		Object.values(this.services).forEach((service) => {
+			if (service instanceof Services.BaseService.default) {
+				service.injectServices(this.services);
 			}
 		});
 	}
@@ -80,9 +91,20 @@ export default class ServiceLocator {
 	}
 
 	async init() {
-		process.env.TZ = "UTC";
+		try {
+			process.env.TZ = "UTC";
 
-		this.#save();
+			await this.dal.init();
+			await this.system.bullmq.init();
+
+			this.services.queueManager.init();
+
+			this.#save();
+		} catch (error) {
+			await this.shutdown();
+
+			throw error;
+		}
 	}
 
 	getThread() {

@@ -100,4 +100,26 @@ export class RepositoryManager {
 	async shutdown() {
 		await PG.connection.shutdown();
 	}
+
+	async checkConnection() {
+		const connection = PG.connection.createClient(this.#config);
+
+		try {
+			await connection.connect();
+
+			await connection.query("SELECT 1");
+
+			return true;
+		} catch (error) {
+			return false;
+		} finally {
+			await connection.end();
+		}
+	}
+
+	async init() {
+		const connected = await this.checkConnection();
+
+		if (!connected) throw new Error(`Failed to connect to PG database ${this.#config.database} at ${this.#config.host}:${this.#config.port}`);
+	}
 }

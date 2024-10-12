@@ -21,7 +21,10 @@ export const exec = (
 					request: fastify.FastifyRequest<{ Body: Types.System.JsonRpc.Types.Request; }>,
 					reply: fastify.FastifyReply,
 				) => {
-					return reply.send(await protocol.exec({ data: request.body }));
+					return reply.send(await protocol.exec(
+						request.body,
+						{ authorization: request.headers.authorization },
+					));
 				},
 				method: "POST",
 				schema: {

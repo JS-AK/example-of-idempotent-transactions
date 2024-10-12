@@ -1,5 +1,5 @@
 import * as Api from "../../index.js";
-import validation, { TGetBalance } from "./validation/index.js";
+import { TGetBalance, getBalance } from "./validation/index.js";
 
 export class ApiClass extends Api.JsonRpcV2<TGetBalance> {
 	async execute() {
@@ -13,12 +13,6 @@ export class ApiClass extends Api.JsonRpcV2<TGetBalance> {
 		return { data: { amount: data } };
 	}
 
-	static getMethodName() {
-		return validation.getBalance.name;
-	}
-
-	static getSchemas() {
-		return validation.getBalance.schemas;
-	}
-
+	static getMethodName() { return getBalance.name; }
+	static getSchemas() { return getBalance.schemas; }
 }

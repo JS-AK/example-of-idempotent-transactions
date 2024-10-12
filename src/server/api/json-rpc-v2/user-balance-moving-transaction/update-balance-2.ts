@@ -1,7 +1,7 @@
 import * as Api from "../../index.js";
-import validation, { TUpdateBalance } from "./validation/index.js";
+import { TUpdateBalance2, updateBalance2 } from "./validation/index.js";
 
-export class ApiClass extends Api.JsonRpcV2<TUpdateBalance> {
+export class ApiClass extends Api.JsonRpcV2<TUpdateBalance2> {
 	async execute() {
 		const { data, error } = await this.services
 			.userBalanceMovingTransaction
@@ -13,12 +13,6 @@ export class ApiClass extends Api.JsonRpcV2<TUpdateBalance> {
 		return { data: { success: data } };
 	}
 
-	static getMethodName() {
-		return validation.updateBalance2.name;
-	}
-
-	static getSchemas() {
-		return validation.updateBalance2.schemas;
-	}
-
+	static getMethodName() { return updateBalance2.name; }
+	static getSchemas() { return updateBalance2.schemas; }
 }
