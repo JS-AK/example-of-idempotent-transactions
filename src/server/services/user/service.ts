@@ -40,7 +40,7 @@ export default class Service extends BaseService {
 	}
 
 	async #abTest1(regToken: string) {
-		return new Promise<{ data: true; }>((resolve) => {
+		return new Promise<{ data: true; }>((resolve, reject) => {
 			this.#dal.transactionManagerExecute(async (client) => {
 				registerToken(regToken);
 
@@ -76,12 +76,16 @@ export default class Service extends BaseService {
 				});
 
 				deleteToken(regToken);
-			}).catch((e) => this.#logger.error(e.message));
+			}).catch((e) => {
+				this.#logger.error(e.message);
+
+				reject(e);
+			});
 		});
 	}
 
 	async #abTest2(regToken: string) {
-		return new Promise<{ data: true; }>((resolve) => {
+		return new Promise<{ data: true; }>((resolve, reject) => {
 			this.#dal.transactionManagerExecute(async (client) => {
 				registerToken(regToken);
 
@@ -117,7 +121,11 @@ export default class Service extends BaseService {
 				});
 
 				deleteToken(regToken);
-			}).catch((e) => this.#logger.error(e.message));
+			}).catch((e) => {
+				this.#logger.error(e.message);
+
+				reject(e);
+			});
 		});
 	}
 
