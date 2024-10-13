@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS user_balance_moving_transactions;
-
 CREATE TABLE user_balance_moving_transactions(
     id                              BIGSERIAL PRIMARY KEY,
 

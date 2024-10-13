@@ -67,6 +67,11 @@ export default class ServiceLocator {
 				config: this.config,
 				logger: this.loggers.bullmq,
 			}),
+			twoPhasedCommitTransaction: new Services.TwoPhasedCommitTransaction.Service.default({
+				businessError: this.system.businessError,
+				dal: this.dal,
+				logger: this.loggers.service,
+			}),
 			user: new Services.User.Service.default({
 				businessError: this.system.businessError,
 				dal: this.dal,

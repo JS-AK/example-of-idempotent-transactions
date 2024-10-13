@@ -1,3 +1,5 @@
+import EventEmitter from "node:events";
+
 import * as Types from "../../types/index.js";
 
 import BaseService from "../base-service.js";
@@ -6,6 +8,8 @@ export default class Service extends BaseService {
 	#businessError;
 	#logger;
 	#repository;
+	#dal;
+	#transactionEventManager;
 
 	constructor(data: {
 		businessError: Types.System.BusinessError.Service;
@@ -18,6 +22,9 @@ export default class Service extends BaseService {
 		this.#logger = data.logger;
 
 		this.#repository = data.dal.repository.user;
+		this.#dal = data.dal;
+
+		this.#transactionEventManager = new EventEmitter();
 	}
 
 	async #getEntityForCheck(
@@ -32,6 +39,92 @@ export default class Service extends BaseService {
 		return { data: user };
 	}
 
+	async #abTest1(regToken: string) {
+		return new Promise<{ data: true; }>((resolve) => {
+			this.#dal.transactionManagerExecute(async (client) => {
+				registerToken(regToken);
+
+				await this.#repository.model
+					.queryBuilder({ client })
+					.select(["id"])
+					.where({ params: {} })
+					.execute<{ id: string; }>();
+
+				resolve({ data: true });
+
+				await new Promise<void>((resolve, reject) => {
+					this.#transactionEventManager.on("close-transaction", (token, status) => {
+						if (regToken !== token) return;
+
+						switch (status) {
+							case "success": {
+								resolve();
+								break;
+							}
+
+							case "failed": {
+								reject(new Error("Failed"));
+								break;
+							}
+
+							default: {
+								reject(new Error(`Unknown status: ${status}`));
+								break;
+							}
+						}
+					});
+				});
+
+				deleteToken(regToken);
+			}).catch((e) => this.#logger.error(e.message));
+		});
+	}
+
+	async #abTest2(regToken: string) {
+		return new Promise<{ data: true; }>((resolve) => {
+			this.#dal.transactionManagerExecute(async (client) => {
+				registerToken(regToken);
+
+				await this.#repository.model
+					.queryBuilder({ client })
+					.select(["id"])
+					.where({ params: {} })
+					.execute<{ id: string; }>();
+
+				resolve({ data: true });
+
+				await new Promise<void>((resolve, reject) => {
+					this.#transactionEventManager.on("close-transaction", (token, status) => {
+						if (regToken !== token) return;
+
+						switch (status) {
+							case "success": {
+								resolve();
+								break;
+							}
+
+							case "failed": {
+								reject(new Error("Failed"));
+								break;
+							}
+
+							default: {
+								reject(new Error(`Unknown status: ${status}`));
+								break;
+							}
+						}
+					});
+				});
+
+				deleteToken(regToken);
+			}).catch((e) => this.#logger.error(e.message));
+		});
+	}
+
+	async #closeTransaction(token: string, status: string) {
+		this.#transactionEventManager.emit("close-transaction", token, status);
+	}
+
 	innerSpace = {
 		getEntityForCheck:
 			async (data: { id?: string; }) => this.#getEntityForCheck(data),
@@ -42,7 +135,7 @@ export default class Service extends BaseService {
 					.select(["*"])
 					.rawFor("FOR UPDATE")
 					.where({ params: { id: payload.id } })
-					.execute<{ id: string; }>();
+					.execute<Types.Dal.User.Types.CoreFields>();
 
 				return entity;
 			},
@@ -60,10 +153,37 @@ export default class Service extends BaseService {
 	};
 
 	outerSpace = {
+		abTest1: this.#abTest1.bind(this),
+		abTest2: this.#abTest2.bind(this),
+		closeTransaction: this.#closeTransaction.bind(this),
 		getBalance: async (payload: { id: string; }): Promise<Types.Common.TDataError<number>> => {
 			const balance = await this.#repository.getBalance(payload);
+
+			this.services.twoPhasedCommitTransaction.innerSpace.execute({
+				idempotenceKey: crypto.randomUUID(),
+			}).catch((e) => this.#logger.error(e.message));
 
 			return { data: balance };
 		},
 	};
 }
+
+const registerToken = async (token: string) => {
+	if (tokens[token]) {
+		throw new Error("Token already registered");
+	}
+
+	tokens[token] = Date.now();
+
+	return;
+};
+
+const deleteToken = (token: string) => {
+	if (!tokens[token]) {
+		throw new Error("Token not found");
+	}
+
+	delete tokens[token];
+};
+
+const tokens: Record<string, number> = {};

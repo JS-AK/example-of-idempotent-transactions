@@ -61,6 +61,7 @@ export class RepositoryManager {
 
 	#createRepository() {
 		return {
+			twoPhaseTransaction: Models.TwoPhasedCommitTransaction.domain(this.#config),
 			user: Models.User.domain(this.#config),
 			userBalanceMovingTransaction: Models.UserBalanceMovingTransaction.domain(this.#config),
 		} as const;
@@ -75,16 +76,6 @@ export class RepositoryManager {
 		} as const;
 	}
 
-	transactionManagerExecute<R>(
-		fn: Parameters<typeof PG.TransactionManager.execute<R>>[0],
-		options?: Omit<Parameters<typeof PG.TransactionManager.execute<R>>[1], "pool">,
-	) {
-		return PG.TransactionManager.execute(fn, {
-			isolationLevel: options?.isolationLevel,
-			pool: this.transactionPool,
-		});
-	}
-
 	#setupErrorHandling() {
 		const handleError = (error: Error) => this.#logger.error(error.message);
 
@@ -97,11 +88,7 @@ export class RepositoryManager {
 		setupPoolErrorHandling(this.transactionPool);
 	}
 
-	async shutdown() {
-		await PG.connection.shutdown();
-	}
-
-	async checkConnection() {
+	async #checkConnection() {
 		const connection = PG.connection.createClient(this.#config);
 
 		try {
@@ -118,8 +105,22 @@ export class RepositoryManager {
 	}
 
 	async init() {
-		const connected = await this.checkConnection();
+		const connected = await this.#checkConnection();
 
 		if (!connected) throw new Error(`Failed to connect to PG database ${this.#config.database} at ${this.#config.host}:${this.#config.port}`);
+	}
+
+	async shutdown() {
+		await PG.connection.shutdown();
+	}
+
+	transactionManagerExecute<R>(
+		fn: Parameters<typeof PG.TransactionManager.execute<R>>[0],
+		options?: Omit<Parameters<typeof PG.TransactionManager.execute<R>>[1], "pool">,
+	) {
+		return PG.TransactionManager.execute(fn, {
+			isolationLevel: options?.isolationLevel,
+			pool: this.transactionPool,
+		});
 	}
 }
