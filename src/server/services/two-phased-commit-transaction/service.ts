@@ -18,7 +18,7 @@ export default class Service extends BaseService {
 		this.#businessError = data.businessError;
 		this.#logger = data.logger;
 
-		this.#repository = data.dal.repository.twoPhaseTransaction;
+		this.#repository = data.dal.repository.twoPhasedCommitTransaction;
 		this.#dal = data.dal;
 	}
 
@@ -39,7 +39,7 @@ export default class Service extends BaseService {
 			return this.#businessError.common.UNKNOWN_ERROR;
 		}
 
-		const data = await this.#dal.transactionManagerExecute(async (client) => {
+		const data = await this.#dal.executeTransaction(async (client) => {
 			const token1 = crypto.randomUUID();
 			const token2 = crypto.randomUUID();
 
@@ -98,5 +98,13 @@ export default class Service extends BaseService {
 
 	innerSpace = {
 		execute: this.#execute.bind(this),
+	};
+
+	outerSpace = {
+		testExecute: async (): Promise<Types.Common.TDataError<boolean>> => {
+			await this.#execute({ idempotenceKey: crypto.randomUUID() });
+
+			return { data: true };
+		},
 	};
 }

@@ -41,7 +41,7 @@ export default class Service extends BaseService {
 
 	async #abTest1(regToken: string) {
 		return new Promise<{ data: true; }>((resolve, reject) => {
-			this.#dal.transactionManagerExecute(async (client) => {
+			this.#dal.executeTransaction(async (client) => {
 				registerToken(regToken);
 
 				await this.#repository.model
@@ -86,7 +86,7 @@ export default class Service extends BaseService {
 
 	async #abTest2(regToken: string) {
 		return new Promise<{ data: true; }>((resolve, reject) => {
-			this.#dal.transactionManagerExecute(async (client) => {
+			this.#dal.executeTransaction(async (client) => {
 				registerToken(regToken);
 
 				await this.#repository.model
@@ -147,16 +147,35 @@ export default class Service extends BaseService {
 
 				return entity;
 			},
-		update:
-			async (payload: { deltaChange: number; id: string; }, client: Types.Dal.PoolClient) => {
-				const [entity] = await this.#repository.model
-					.queryBuilder({ client })
-					.rawUpdate("balance = balance - $1", [payload.deltaChange])
-					.where({ params: { id: payload.id } })
-					.returning(["balance"])
-					.execute<{ balance: string; }>();
+		updateBalance:
+			async (payload: { deltaChange: number; id: string; type: "increase" | "reduce"; }, client: Types.Dal.PoolClient) => {
+				switch (payload.type) {
+					case "increase": {
+						const [entity] = await this.#repository.model
+							.queryBuilder({ client })
+							.rawUpdate("balance = balance + $1", [payload.deltaChange])
+							.where({ params: { id: payload.id } })
+							.returning(["balance"])
+							.execute<{ balance: string; }>();
 
-				return entity;
+						return entity;
+					}
+
+					case "reduce": {
+						const [entity] = await this.#repository.model
+							.queryBuilder({ client })
+							.rawUpdate("balance = balance - $1", [payload.deltaChange])
+							.where({ params: { id: payload.id } })
+							.returning(["balance"])
+							.execute<{ balance: string; }>();
+
+						return entity;
+					}
+
+					default: {
+						throw new Error("invalid payload.type");
+					}
+				}
 			},
 	};
 
@@ -166,10 +185,6 @@ export default class Service extends BaseService {
 		closeTransaction: this.#closeTransaction.bind(this),
 		getBalance: async (payload: { id: string; }): Promise<Types.Common.TDataError<number>> => {
 			const balance = await this.#repository.getBalance(payload);
-
-			this.services.twoPhasedCommitTransaction.innerSpace.execute({
-				idempotenceKey: crypto.randomUUID(),
-			}).catch((e) => this.#logger.error(e.message));
 
 			return { data: balance };
 		},

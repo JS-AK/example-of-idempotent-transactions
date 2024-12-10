@@ -1,2 +1,3 @@
-export * from "./models/index.js";
 export * from "./repository-manager.js";
+
+export * from "./repository/index.js";

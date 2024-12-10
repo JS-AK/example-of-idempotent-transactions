@@ -22,22 +22,27 @@ export default class ServiceLocator {
 
 		this.loggers = {
 			api: systemLogger.child({ pSource: "API", pThread: this.getThread() }),
-			bullmq: systemLogger.child({ pSource: "BULLMQ", pThread: this.getThread() }),
 			common: systemLogger.child({ pSource: "COMMON", pThread: this.getThread() }),
 			pg: systemLogger.child({ pSource: "PG", pThread: this.getThread() }),
-			service: systemLogger.child({ pSource: "SERVICE", pThread: this.getThread() }),
+			queueManager: systemLogger.child({ pSource: "SERVICE-QUEUE-MANAGE", pThread: this.getThread() }),
+			twoPhasedCommitTransaction: systemLogger.child({ pSource: "SERVICE-TWO-PHASED-COMMIT-TRANSACTION", pThread: this.getThread() }),
+			user: systemLogger.child({ pSource: "SERVICE-USER", pThread: this.getThread() }),
+			userBalanceMovingTransaction: systemLogger.child({ pSource: "SERVICE-USER-BALANCE-MOVING-TRANSACTION", pThread: this.getThread() }),
 		};
 
-		this.dal = new RepositoryManager({
-			config: {
+		this.dal = new RepositoryManager(
+			{
 				database: this.config.DB_POSTGRE_DATABASE,
 				host: this.config.DB_POSTGRE_HOST,
 				password: this.config.DB_POSTGRE_PASSWORD,
 				port: this.config.DB_POSTGRE_PORT,
 				user: this.config.DB_POSTGRE_USER,
 			},
-			logger: this.loggers.pg,
-		});
+			{
+				isLoggerEnabled: true,
+				logger: this.loggers.pg,
+			},
+		);
 
 		this.system = {
 			JsonRpc: System.JsonRpc.Service,
@@ -65,22 +70,22 @@ export default class ServiceLocator {
 			queueManager: new Services.QueueManager.Service.default({
 				bullmq: this.system.bullmq,
 				config: this.config,
-				logger: this.loggers.bullmq,
+				logger: this.loggers.queueManager,
 			}),
 			twoPhasedCommitTransaction: new Services.TwoPhasedCommitTransaction.Service.default({
 				businessError: this.system.businessError,
 				dal: this.dal,
-				logger: this.loggers.service,
+				logger: this.loggers.twoPhasedCommitTransaction,
 			}),
 			user: new Services.User.Service.default({
 				businessError: this.system.businessError,
 				dal: this.dal,
-				logger: this.loggers.service,
+				logger: this.loggers.user,
 			}),
 			userBalanceMovingTransaction: new Services.UserBalanceMovingTransaction.Service.default({
 				businessError: this.system.businessError,
 				dal: this.dal,
-				logger: this.loggers.service,
+				logger: this.loggers.userBalanceMovingTransaction,
 			}),
 		};
 

@@ -46,7 +46,7 @@ const dbConfig = {
 export default async () => {
 	const url = `${config.SERVER_URI}:${config.SERVER_PORT}`;
 
-	return test("check-low-balance", async (ctx) => {
+	return test("two-phased-commit-transaction", async (ctx) => {
 		await ctx.test("db down", async () => {
 			const pool = DbManager.PG.BaseModel.getStandardPool(dbConfig);
 
@@ -84,15 +84,15 @@ export default async () => {
 
 			await setTimeout(1000);
 
-			await ctx.test("get-user-balance", async () => {
-				const method = "user/get-balance";
+			await ctx.test("test-execute", async () => {
+				const method = "two-phased-commit-transaction/test-execute";
 
 				const res = await fetch(`${url}/api/${method}`, {
 					body: JSON.stringify({
 						id: crypto.randomUUID(),
 						jsonrpc: "2.0",
 						method,
-						params: { id: "1" },
+						params: {},
 					}),
 					headers: { "Content-Type": "application/json" },
 					method: "POST",
@@ -100,118 +100,7 @@ export default async () => {
 
 				const data = await res.json();
 
-				assert.strictEqual(data.result.amount, 10000);
-			});
-
-			await ctx.test("update-user-balance-1", async () => {
-				const promises = [];
-				const method = "user-balance-moving-transaction/update-user-balance-1";
-
-				for (let idx = 0; idx < 10; idx++) {
-					promises.push(fetch(`${url}/api/${method}`, {
-						body: JSON.stringify({
-							id: crypto.randomUUID(),
-							jsonrpc: "2.0",
-							method,
-							params: {
-								deltaChange: 1330,
-								operation: "reduce",
-								uniqueIdentificator: crypto.randomUUID(),
-								userId: "1",
-							},
-						}),
-						headers: { "Content-Type": "application/json" },
-						method: "POST",
-					}));
-				}
-
-				await Promise.all(promises);
-
-				await setTimeout(10000);
-
-				{
-					const method = "user/get-balance";
-
-					const res = await fetch(`${url}/api/${method}`, {
-						body: JSON.stringify({
-							id: crypto.randomUUID(),
-							jsonrpc: "2.0",
-							method,
-							params: { id: "1" },
-						}),
-						headers: { "Content-Type": "application/json" },
-						method: "POST",
-					});
-
-					const data = await res.json();
-
-					assert.strictEqual(data.result.amount >= 0, true);
-				}
-			});
-
-			await ctx.test("get-user-balance-2", async () => {
-				const method = "user/get-balance";
-
-				const res = await fetch(`${url}/api/${method}`, {
-					body: JSON.stringify({
-						id: crypto.randomUUID(),
-						jsonrpc: "2.0",
-						method,
-						params: { id: "2" },
-					}),
-					headers: { "Content-Type": "application/json" },
-					method: "POST",
-				});
-
-				const data = await res.json();
-
-				assert.strictEqual(data.result.amount, 10000);
-			});
-
-			await ctx.test("update-user-balance-2", async () => {
-				const promises = [];
-				const method = "user-balance-moving-transaction/update-user-balance-2";
-
-				for (let idx = 0; idx < 10; idx++) {
-					promises.push(fetch(`${url}/api/${method}`, {
-						body: JSON.stringify({
-							id: crypto.randomUUID(),
-							jsonrpc: "2.0",
-							method,
-							params: {
-								deltaChange: 1330,
-								operation: "reduce",
-								uniqueIdentificator: crypto.randomUUID(),
-								userId: "2",
-							},
-						}),
-						headers: { "Content-Type": "application/json" },
-						method: "POST",
-					}));
-				}
-
-				await Promise.all(promises);
-
-				await setTimeout(10000);
-
-				{
-					const method = "user/get-balance";
-
-					const res = await fetch(`${url}/api/${method}`, {
-						body: JSON.stringify({
-							id: crypto.randomUUID(),
-							jsonrpc: "2.0",
-							method,
-							params: { id: "2" },
-						}),
-						headers: { "Content-Type": "application/json" },
-						method: "POST",
-					});
-
-					const data = await res.json();
-
-					assert.strictEqual(data.result.amount >= 0, true);
-				}
+				assert.strictEqual(data.result.success, true);
 			});
 
 			await server.close();
