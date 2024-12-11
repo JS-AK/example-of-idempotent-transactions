@@ -41,42 +41,48 @@ export default class Service extends BaseService {
 
 	async #abTest1(regToken: string) {
 		return new Promise<{ data: true; }>((resolve, reject) => {
-			this.#dal.executeTransaction(async (client) => {
-				registerToken(regToken);
+			this.#dal.executeTransaction(
+				async (client) => {
+					registerToken(regToken);
 
-				await this.#repository.model
-					.queryBuilder({ client })
-					.select(["id"])
-					.where({ params: {} })
-					.execute<{ id: string; }>();
+					await this.#repository.model
+						.queryBuilder({ client })
+						.select(["id"])
+						.where({ params: {} })
+						.execute<{ id: string; }>();
 
-				resolve({ data: true });
+					resolve({ data: true });
 
-				await new Promise<void>((resolve, reject) => {
-					this.#transactionEventManager.on("close-transaction", (token, status) => {
-						if (regToken !== token) return;
+					await new Promise<void>((resolve, reject) => {
+						this.#transactionEventManager.on("close-transaction", (token, status) => {
+							if (regToken !== token) return;
 
-						switch (status) {
-							case "success": {
-								resolve();
-								break;
+							switch (status) {
+								case "success": {
+									resolve();
+									break;
+								}
+
+								case "failed": {
+									reject(new Error("Failed"));
+									break;
+								}
+
+								default: {
+									reject(new Error(`Unknown status: ${status}`));
+									break;
+								}
 							}
-
-							case "failed": {
-								reject(new Error("Failed"));
-								break;
-							}
-
-							default: {
-								reject(new Error(`Unknown status: ${status}`));
-								break;
-							}
-						}
+						});
 					});
-				});
 
-				deleteToken(regToken);
-			}).catch((e) => {
+					deleteToken(regToken);
+				},
+				{
+					timeToRollback: 10000,
+					transactionId: "ab-test-1",
+				},
+			).catch((e) => {
 				this.#logger.error(e.message);
 
 				reject(e);
@@ -86,42 +92,48 @@ export default class Service extends BaseService {
 
 	async #abTest2(regToken: string) {
 		return new Promise<{ data: true; }>((resolve, reject) => {
-			this.#dal.executeTransaction(async (client) => {
-				registerToken(regToken);
+			this.#dal.executeTransaction(
+				async (client) => {
+					registerToken(regToken);
 
-				await this.#repository.model
-					.queryBuilder({ client })
-					.select(["id"])
-					.where({ params: {} })
-					.execute<{ id: string; }>();
+					await this.#repository.model
+						.queryBuilder({ client })
+						.select(["id"])
+						.where({ params: {} })
+						.execute<{ id: string; }>();
 
-				resolve({ data: true });
+					resolve({ data: true });
 
-				await new Promise<void>((resolve, reject) => {
-					this.#transactionEventManager.on("close-transaction", (token, status) => {
-						if (regToken !== token) return;
+					await new Promise<void>((resolve, reject) => {
+						this.#transactionEventManager.on("close-transaction", (token, status) => {
+							if (regToken !== token) return;
 
-						switch (status) {
-							case "success": {
-								resolve();
-								break;
+							switch (status) {
+								case "success": {
+									resolve();
+									break;
+								}
+
+								case "failed": {
+									reject(new Error("Failed"));
+									break;
+								}
+
+								default: {
+									reject(new Error(`Unknown status: ${status}`));
+									break;
+								}
 							}
-
-							case "failed": {
-								reject(new Error("Failed"));
-								break;
-							}
-
-							default: {
-								reject(new Error(`Unknown status: ${status}`));
-								break;
-							}
-						}
+						});
 					});
-				});
 
-				deleteToken(regToken);
-			}).catch((e) => {
+					deleteToken(regToken);
+				},
+				{
+					timeToRollback: 10000,
+					transactionId: "ab-test-2",
+				},
+			).catch((e) => {
 				this.#logger.error(e.message);
 
 				reject(e);

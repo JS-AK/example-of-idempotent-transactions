@@ -72,38 +72,44 @@ export default class Service extends BaseService {
 			uniqueIdentificator: string;
 			userId: string;
 		}) => {
-			const data = await this.#dal.executeTransaction(async (client) => {
-				const [userBalanceTransaction] = await this.#dal.queryBuilderFactory
-					.createQueryBuilder({
-						client,
-						dataSource: this.#dal.repository.userBalanceMovingTransaction.tableName,
-					})
-					.insert({
-						params: {
-							delta_change: payload.deltaChange,
-							operation: "reduce",
-							unique_identificator: payload.uniqueIdentificator,
-							user_id: payload.userId,
-						},
-					})
-					.returning(["id"])
-					.execute<{ id: string; }>();
+			const data = await this.#dal.executeTransaction(
+				async (client) => {
+					const [userBalanceTransaction] = await this.#dal.queryBuilderFactory
+						.createQueryBuilder({
+							client,
+							dataSource: this.#dal.repository.userBalanceMovingTransaction.tableName,
+						})
+						.insert({
+							params: {
+								delta_change: payload.deltaChange,
+								operation: "reduce",
+								unique_identificator: payload.uniqueIdentificator,
+								user_id: payload.userId,
+							},
+						})
+						.returning(["id"])
+						.execute<{ id: string; }>();
 
-				if (!userBalanceTransaction) throw new Error("Something went wrong");
+					if (!userBalanceTransaction) throw new Error("Something went wrong");
 
-				const user = await this.services
-					.user
-					.innerSpace
-					.updateBalance(
-						{ deltaChange: payload.deltaChange, id: payload.userId, type: "reduce" },
-						client,
-					);
+					const user = await this.services
+						.user
+						.innerSpace
+						.updateBalance(
+							{ deltaChange: payload.deltaChange, id: payload.userId, type: "reduce" },
+							client,
+						);
 
-				if (!user) throw new Error("Something went wrong");
-				if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");
+					if (!user) throw new Error("Something went wrong");
+					if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");
 
-				return { id: userBalanceTransaction.id };
-			}).catch((e) => this.#logger.error(e.message));
+					return { id: userBalanceTransaction.id };
+				},
+				{
+					timeToRollback: 10000,
+					transactionId: "reduce-balance",
+				},
+			).catch((e) => this.#logger.error(e.message));
 
 			if (!data) return this.#businessError.common.UNKNOWN_ERROR;
 
@@ -187,31 +193,37 @@ export default class Service extends BaseService {
 				}
 
 				case "reduce": {
-					const data = await this.#dal.executeTransaction(async (client) => {
-						await this.services
-							.user
-							.innerSpace
-							.holdEntityForUpdate({ id: payload.userId }, client);
+					const data = await this.#dal.executeTransaction(
+						async (client) => {
+							await this.services
+								.user
+								.innerSpace
+								.holdEntityForUpdate({ id: payload.userId }, client);
 
-						const userBalanceTransaction = await this
-							.innerSpace
-							.createOne(payload, client);
+							const userBalanceTransaction = await this
+								.innerSpace
+								.createOne(payload, client);
 
-						if (!userBalanceTransaction) throw new Error("Something went wrong");
+							if (!userBalanceTransaction) throw new Error("Something went wrong");
 
-						const user = await this.services
-							.user
-							.innerSpace
-							.updateBalance(
-								{ deltaChange: payload.deltaChange, id: payload.userId, type: "reduce" },
-								client,
-							);
+							const user = await this.services
+								.user
+								.innerSpace
+								.updateBalance(
+									{ deltaChange: payload.deltaChange, id: payload.userId, type: "reduce" },
+									client,
+								);
 
-						if (!user) throw new Error("Something went wrong");
-						if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");
+							if (!user) throw new Error("Something went wrong");
+							if (Number(user.balance) < 0) throw new Error("Balance cannot be made negative");
 
-						return { id: userBalanceTransaction.id };
-					}).catch((e) => this.#logger.error(e.message));
+							return { id: userBalanceTransaction.id };
+						},
+						{
+							timeToRollback: 10000,
+							transactionId: "reduce-balance-2",
+						},
+					).catch((e) => this.#logger.error(e.message));
 
 					if (!data) return this.#businessError.common.UNKNOWN_ERROR;
 

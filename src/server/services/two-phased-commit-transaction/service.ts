@@ -39,50 +39,56 @@ export default class Service extends BaseService {
 			return this.#businessError.common.UNKNOWN_ERROR;
 		}
 
-		const data = await this.#dal.executeTransaction(async (client) => {
-			const token1 = crypto.randomUUID();
-			const token2 = crypto.randomUUID();
-
-			await this.#repository
-				.setClientInCurrentClass(client)
-				.updateOneByPk(transaction.id, {
-					finished_at: new Date(),
-					status: "in_progress",
-				});
-
-			try {
-				await this.services
-					.user
-					.outerSpace
-					.abTest1(token1);
-
-				await this.services
-					.user
-					.outerSpace
-					.abTest2(token2);
-
-				await Promise.all([
-					this.services.user.outerSpace.closeTransaction(token1, "success"),
-					this.services.user.outerSpace.closeTransaction(token2, "success"),
-				]);
+		const data = await this.#dal.executeTransaction(
+			async (client) => {
+				const token1 = crypto.randomUUID();
+				const token2 = crypto.randomUUID();
 
 				await this.#repository
 					.setClientInCurrentClass(client)
 					.updateOneByPk(transaction.id, {
 						finished_at: new Date(),
-						status: "success",
+						status: "in_progress",
 					});
 
-				return { success: true };
-			} catch (error) {
-				await Promise.all([
-					this.services.user.outerSpace.closeTransaction(token1, "failed"),
-					this.services.user.outerSpace.closeTransaction(token2, "failed"),
-				]);
+				try {
+					await this.services
+						.user
+						.outerSpace
+						.abTest1(token1);
 
-				throw error;
-			}
-		}).catch((e) => this.#logger.error(e.message));
+					await this.services
+						.user
+						.outerSpace
+						.abTest2(token2);
+
+					await Promise.all([
+						this.services.user.outerSpace.closeTransaction(token1, "success"),
+						this.services.user.outerSpace.closeTransaction(token2, "success"),
+					]);
+
+					await this.#repository
+						.setClientInCurrentClass(client)
+						.updateOneByPk(transaction.id, {
+							finished_at: new Date(),
+							status: "success",
+						});
+
+					return { success: true };
+				} catch (error) {
+					await Promise.all([
+						this.services.user.outerSpace.closeTransaction(token1, "failed"),
+						this.services.user.outerSpace.closeTransaction(token2, "failed"),
+					]);
+
+					throw error;
+				}
+			},
+			{
+				timeToRollback: 10000,
+				transactionId: "two-phased-commit-transaction-execute",
+			},
+		).catch((e) => this.#logger.error(e.message));
 
 		if (!data) {
 			await this.#repository.updateOneByPk(transaction.id, {
