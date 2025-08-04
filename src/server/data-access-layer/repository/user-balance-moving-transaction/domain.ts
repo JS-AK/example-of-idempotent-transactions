@@ -2,9 +2,7 @@ import { PG } from "@js-ak/db-manager";
 
 import * as Types from "./types.js";
 
-import { model } from "./model.js";
-
-export default class Domain extends PG.Domain.BaseTable<PG.Model.BaseTable, {
+export default class Domain extends PG.Repository.Table<{
 	CreateFields: Types.CreateFields;
 	SearchFields: Types.SearchFields;
 	CoreFields: Types.TableFields;
@@ -20,5 +18,25 @@ export default class Domain extends PG.Domain.BaseTable<PG.Model.BaseTable, {
 	}
 }
 
-export const domain = (creds: PG.ModelTypes.TDBCreds) =>
-	new Domain({ model: model(creds) });
+export const domain = (dbCreds: PG.ModelTypes.TDBCreds) =>
+	new Domain({
+		dbCreds,
+		schema: {
+			createField: { title: "created_at", type: "timestamp" },
+			primaryKey: "id",
+			tableFields: [
+				"id",
+
+				"user_id",
+
+				"delta_change",
+				"operation",
+				"unique_identificator",
+
+				"created_at",
+				"updated_at",
+			],
+			tableName: "user_balance_moving_transactions",
+			updateField: { title: "updated_at", type: "timestamp" },
+		},
+	});

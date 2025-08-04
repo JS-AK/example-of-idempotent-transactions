@@ -56,7 +56,7 @@ export default class Service extends BaseService {
 
 	async #getEntityForCheck(
 		payload: { uniqueIdentificator?: string; },
-	): Promise<Types.Common.TDataError<Types.Dal.UserBalanceMovingTransaction.Types.EntityForCheck>> {
+	): Promise<Types.Common.TDataError<Types.Dal.Repository.UserBalanceMovingTransaction.Types.EntityForCheck>> {
 		const user = await this.#repository.getEntityForCheck(payload);
 
 		if (!user) {
@@ -119,7 +119,7 @@ export default class Service extends BaseService {
 
 	innerSpace = {
 		createOne:
-			async (payload: { deltaChange: number; uniqueIdentificator: string; userId: string; }, client: Types.Dal.PoolClient) => {
+			async (payload: { deltaChange: number; uniqueIdentificator: string; userId: string; }, client: Types.Dal.Types.PoolClient) => {
 				const [userBalanceTransaction] = await this.#repository
 					.model
 					.queryBuilder({ client })

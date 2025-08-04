@@ -8,11 +8,11 @@ export default class Service extends BaseService {
 	#logger;
 
 	#queues!: {
-		["user-balance-moving-transaction-reduce"]: [
-			Types.System.BullMQ.Queue,
-			Types.System.BullMQ.QueueEvents,
-			Types.System.BullMQ.Worker,
-		];
+		["user-balance-moving-transaction-reduce"]: {
+			queue: Types.System.BullMQ.Queue;
+			queueEvents: Types.System.BullMQ.QueueEvents;
+			worker: Types.System.BullMQ.Worker;
+		};
 	};
 
 	constructor(data: {
@@ -113,11 +113,11 @@ export default class Service extends BaseService {
 
 		if (!worker) throw new Error("worker is not initialized");
 
-		return [
+		return {
 			queue,
 			queueEvents,
 			worker,
-		] as [Types.System.BullMQ.Queue, Types.System.BullMQ.QueueEvents, Types.System.BullMQ.Worker];
+		};
 	}
 
 	queues = {
@@ -132,13 +132,15 @@ export default class Service extends BaseService {
 				const jobName = this.queues
 					.userBalanceMovingTransactionReduce
 					.getJobName();
-				const job = await this.#queues["user-balance-moving-transaction-reduce"][0].add(
+				const { queue, queueEvents } = this.#queues["user-balance-moving-transaction-reduce"];
+
+				const job = await queue.add(
 					jobName,
 					data,
 					{ attempts: 1 },
 				);
 
-				return job.waitUntilFinished(this.#queues["user-balance-moving-transaction-reduce"][1]);
+				return job.waitUntilFinished(queueEvents);
 			},
 			getJobName: () => "user-balance-moving-transaction-reduce",
 		},
@@ -147,11 +149,11 @@ export default class Service extends BaseService {
 	async shutdown(): Promise<void> {
 		if (!this.#queues) return;
 
-		const [
+		const {
 			queue,
 			queueEvents,
 			worker,
-		] = this.#queues["user-balance-moving-transaction-reduce"];
+		} = this.#queues["user-balance-moving-transaction-reduce"];
 
 		await Promise.all([
 			queue.close(),

@@ -29,7 +29,7 @@ export default class Service extends BaseService {
 
 	async #getEntityForCheck(
 		payload: { id?: string; hrNumber?: string; email?: string; },
-	): Promise<Types.Common.TDataError<Types.Dal.User.Types.EntityForCheck>> {
+	): Promise<Types.Common.TDataError<Types.Dal.Repository.User.Types.EntityForCheck>> {
 		const user = await this.#repository.getEntityForCheck(payload);
 
 		if (!user) {
@@ -149,18 +149,18 @@ export default class Service extends BaseService {
 		getEntityForCheck:
 			async (data: { id?: string; }) => this.#getEntityForCheck(data),
 		holdEntityForUpdate:
-			async (payload: { id: string; }, client: Types.Dal.PoolClient) => {
+			async (payload: { id: string; }, client: Types.Dal.Types.PoolClient) => {
 				const [entity] = await this.#repository.model
 					.queryBuilder({ client })
 					.select(["*"])
 					.rawFor("FOR UPDATE")
 					.where({ params: { id: payload.id } })
-					.execute<Types.Dal.User.Types.CoreFields>();
+					.execute<Types.Dal.Repository.User.Types.CoreFields>();
 
 				return entity;
 			},
 		updateBalance:
-			async (payload: { deltaChange: number; id: string; type: "increase" | "reduce"; }, client: Types.Dal.PoolClient) => {
+			async (payload: { deltaChange: number; id: string; type: "increase" | "reduce"; }, client: Types.Dal.Types.PoolClient) => {
 				switch (payload.type) {
 					case "increase": {
 						const [entity] = await this.#repository.model

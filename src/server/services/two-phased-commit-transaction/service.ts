@@ -45,7 +45,7 @@ export default class Service extends BaseService {
 				const token2 = crypto.randomUUID();
 
 				await this.#repository
-					.setClientInCurrentClass(client)
+					.setupClient(client)
 					.updateOneByPk(transaction.id, {
 						finished_at: new Date(),
 						status: "in_progress",
@@ -68,7 +68,7 @@ export default class Service extends BaseService {
 					]);
 
 					await this.#repository
-						.setClientInCurrentClass(client)
+						.setupClient(client)
 						.updateOneByPk(transaction.id, {
 							finished_at: new Date(),
 							status: "success",

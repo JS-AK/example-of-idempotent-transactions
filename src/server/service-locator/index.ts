@@ -2,7 +2,7 @@ import * as Types from "../types/index.js";
 
 import * as Services from "../services/index.js";
 import * as System from "../system/index.js";
-import { RepositoryManager } from "../data-access-layer/repository-manager.js";
+import { RepositoryManager } from "../data-access-layer/index.js";
 
 const store: { sl?: ServiceLocator; } = { sl: undefined };
 
@@ -30,7 +30,7 @@ export default class ServiceLocator {
 			userBalanceMovingTransaction: systemLogger.child({ pSource: "SERVICE-USER-BALANCE-MOVING-TRANSACTION", pThread: this.getThread() }),
 		};
 
-		this.dal = new RepositoryManager(
+		this.dal = RepositoryManager.init(
 			{
 				database: this.config.DB_POSTGRE_DATABASE,
 				host: this.config.DB_POSTGRE_HOST,
