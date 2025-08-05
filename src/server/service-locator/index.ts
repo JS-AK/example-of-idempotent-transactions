@@ -8,7 +8,7 @@ const store: { sl?: ServiceLocator; } = { sl: undefined };
 
 export default class ServiceLocator {
 	config;
-	dal;
+	dal: ReturnType<typeof RepositoryManager.init>;
 	loggers;
 	services;
 	system;
